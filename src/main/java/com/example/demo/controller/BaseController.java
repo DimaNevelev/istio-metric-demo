@@ -43,6 +43,7 @@ public class BaseController {
             throw new IllegalStateException("no instances of service-2 were found");
         }
         ServiceInstance instance = discoveryClient.getInstances("service-2").get(0);
+        printEnvInfo();
         OkHttpClient okHttpClient = new OkHttpClient();
         Request request = new Request.Builder()
                 .url(instance.getUri().toString() + "/api/v1/local")
@@ -50,6 +51,23 @@ public class BaseController {
         ObjectNode node = getResponseBody(okHttpClient, request);
         node.put("internal", 1);
         return node;
+    }
+
+    private void printEnvInfo() {
+        log.info("Me: {}", instanceToString(discoveryClient.getInstances("service-1").get(0)));
+        log.info("Service 2: {}", instanceToString(discoveryClient.getInstances("service-2").get(0)));
+    }
+
+    private String instanceToString(ServiceInstance serviceInstance) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Host: ").append(serviceInstance.getHost()).append("\n")
+                .append("Port: ").append(serviceInstance.getPort()).append("\n")
+                .append("ServiceId: ").append(serviceInstance.getServiceId()).append("\n")
+                .append("URI: ").append(serviceInstance.getUri()).append("\n")
+                .append("Metadata: ").append(serviceInstance.getMetadata().toString()).append("\n")
+                .append("InstanceId: ").append(serviceInstance.getInstanceId()).append("\n")
+                .append("Scheme: ").append(serviceInstance.getScheme()).append("\n");
+        return sb.toString();
     }
 
     @GetMapping("external")

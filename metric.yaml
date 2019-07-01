@@ -13,8 +13,9 @@ spec:
       source: source.workload.name | "unknown"
       source_workload: source.workload.name | "unknown"
       source_workload_namespace: source.workload.namespace | "unknown"
+      destination_host: destination.service.host | "unknown"
       destination: destination.workload.name | "unknown"
-      message: '"tenant-" + request.headers["tenant"] | request.auth.claims["tenant"] | "unknown"'
+      message: '"tenant-"+(request.headers["tenant"] | "unknown")'
     monitored_resource_type: '"UNSPECIFIED"'
 ---
 # Configuration for a Prometheus handler
@@ -32,8 +33,9 @@ spec:
         kind: COUNTER
         label_names:
           - reporter
-          - source
           - destination
+          - destination_host
+          - source
           - message
           - source_workload
           - source_workload_namespace
