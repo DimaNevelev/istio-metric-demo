@@ -60,10 +60,10 @@ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=pr
 
 Init the metrics:
 ```
-curl -s http://${GATEWAY_URL}/api/v1/local
-curl -s http://${GATEWAY_URL}/api/v1/internal
-curl -s http://${GATEWAY_URL}/api/v1/external
-curl -s http://${GATEWAY_URL}/api/v1/namespace
+curl -s http://${GATEWAY_URL}/api/v1/local -H"tenant: 123"
+curl -s http://${GATEWAY_URL}/api/v1/internal -H"tenant: 123"
+curl -s http://${GATEWAY_URL}/api/v1/external -H"tenant: 123"
+curl -s http://${GATEWAY_URL}/api/v1/namespace -H"tenant: 123"
 ```
 
 Browse to the following url: <http://localhost:9090/graph?g0.range_input=1h&g0.expr=istio_my_request_count%7Bdestination!~%22istio.*%22%7D&g0.tab=1>
