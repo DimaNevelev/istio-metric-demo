@@ -5,15 +5,16 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import okhttp3.*;
+import okhttp3.ResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 
 @RestController
@@ -29,62 +30,93 @@ public class BaseController {
     @GetMapping("local")
     public ObjectNode getLocal() {
         log.info("Received local call");
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode obj = mapper.createObjectNode();
+        ObjectNode obj = new ObjectMapper().createObjectNode();
         obj.put("local", 1);
         return obj;
     }
 
     @GetMapping("internal")
-    public ObjectNode getInternal() {
+    public ObjectNode getInternal(@RequestHeader(value="tenant", defaultValue="unknown") String tenant) {
         log.info("Received internal call");
         if (discoveryClient.getInstances("service-2") != null &&
                 discoveryClient.getInstances("service-2").size() == 0) {
             throw new IllegalStateException("no instances of service-2 were found");
         }
         ServiceInstance instance = discoveryClient.getInstances("service-2").get(0);
-        printEnvInfo();
+        discoveryClient.getServices()
+                .forEach(_instance -> log.info("Instance {}: {}", _instance, findInstanceInfo(_instance)));
         OkHttpClient okHttpClient = new OkHttpClient();
         Request request = new Request.Builder()
                 .url(instance.getUri().toString() + "/api/v1/local")
+                .addHeader("tenant", tenant)
                 .build();
         ObjectNode node = getResponseBody(okHttpClient, request);
         node.put("internal", 1);
         return node;
     }
 
-    private void printEnvInfo() {
-        log.info("Me: {}", instanceToString(discoveryClient.getInstances("service-1").get(0)));
-        log.info("Service 2: {}", instanceToString(discoveryClient.getInstances("service-2").get(0)));
+    @GetMapping("instance/{instanceName}")
+    public ObjectNode getInstance(@PathVariable String instanceName) {
+        log.info("Received instance call for {}", instanceName);
+        String instanceInfo = findInstanceInfo(instanceName);
+        log.info("Instance info: {}", instanceInfo);
+        ObjectNode node = new ObjectMapper().createObjectNode();
+        node.put("instance", instanceInfo);
+        return node;
     }
 
-    private String instanceToString(ServiceInstance serviceInstance) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Host: ").append(serviceInstance.getHost()).append("\n")
-                .append("Port: ").append(serviceInstance.getPort()).append("\n")
-                .append("ServiceId: ").append(serviceInstance.getServiceId()).append("\n")
-                .append("URI: ").append(serviceInstance.getUri()).append("\n")
-                .append("Metadata: ").append(serviceInstance.getMetadata().toString()).append("\n")
-                .append("InstanceId: ").append(serviceInstance.getInstanceId()).append("\n")
-                .append("Scheme: ").append(serviceInstance.getScheme()).append("\n");
-        return sb.toString();
+    @GetMapping("instances")
+    public ObjectNode getInstances() {
+        log.info("Received get instances");
+        log.info("Instances info: {}", Arrays.toString(discoveryClient.getServices().toArray()));
+        ObjectNode node = new ObjectMapper().createObjectNode();
+        node.put("instances", Arrays.toString(discoveryClient.getServices().toArray()));
+        return node;
     }
 
     @GetMapping("external")
-    public ObjectNode getExternal() {
+    public ObjectNode getExternal(@RequestHeader(value="tenant", defaultValue="unknown") String tenant) {
         log.info("Received external call");
         OkHttpClient okHttpClient = new OkHttpClient();
         Request request = new Request.Builder()
                 .url("http://httpbin.org/get")
+                .addHeader("tenant", tenant)
                 .build();
         ObjectNode node = getResponseBody(okHttpClient, request);
         node.put("external", 1);
         return node;
     }
 
+    @GetMapping("namespace")
+    public ObjectNode getNamespace(@RequestHeader(value="tenant", defaultValue="unknown") String tenant) {
+        log.info("Received namespace call");
+        OkHttpClient okHttpClient = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url("http://service-3.n2.svc.cluster.local:8080/api/v1/local")
+                .addHeader("tenant", tenant)
+                .build();
+        ObjectNode node = getResponseBody(okHttpClient, request);
+        node.put("namespace", 1);
+        return node;
+    }
+
+    private String findInstanceInfo(String instance) {
+        List<ServiceInstance> serviceInstances = discoveryClient.getInstances(instance);
+        if (serviceInstances.isEmpty()) {
+            return "Not Found";
+        }
+        ServiceInstance serviceInstance = serviceInstances.get(0);
+        return "Host: " + serviceInstance.getHost() + "\n" +
+                "Port: " + serviceInstance.getPort() + "\n" +
+                "ServiceId: " + serviceInstance.getServiceId() + "\n" +
+                "URI: " + serviceInstance.getUri() + "\n" +
+                "Metadata: " + serviceInstance.getMetadata().toString() + "\n" +
+                "InstanceId: " + serviceInstance.getInstanceId() + "\n" +
+                "Scheme: " + serviceInstance.getScheme() + "\n";
+    }
+
     private ObjectNode getResponseBody(OkHttpClient okHttpClient, Request request) {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode node = mapper.createObjectNode();
+        ObjectNode node = new ObjectMapper().createObjectNode();
         Call call = okHttpClient.newCall(request);
         log.info("Executing the call");
         try (Response response = call.execute();

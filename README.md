@@ -5,7 +5,7 @@ Download istio release:  https://istio.io/docs/setup/kubernetes/#downloading-the
 Start istio on minikube
 ```
 minikube delete
-minikube start --memory=16384 --cpus=4 --kubernetes-version=v1.14.2
+minikube start --memory=16384 --cpus=6 --kubernetes-version=v1.14.2
 ```
 
 Open another terminal and run:
@@ -33,7 +33,7 @@ Clone and build the demo app
 ```
 git clone https://github.com/DimaNevelev/istio-metric-demo.git
 cd istio-metric-demo
-mvn clean package
+mvn clean package -DskipTests
 eval $(minikube docker-env)
 docker build -t istioexample/demo:0.1 .
 ```
@@ -50,6 +50,7 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -
 export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
 export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')
 export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
+echo $GATEWAY_URL
 ```
 
 Apply prometheus  port-forwarding
@@ -62,6 +63,7 @@ Init the metrics:
 curl -s http://${GATEWAY_URL}/api/v1/local
 curl -s http://${GATEWAY_URL}/api/v1/internal
 curl -s http://${GATEWAY_URL}/api/v1/external
+curl -s http://${GATEWAY_URL}/api/v1/namespace
 ```
 
 Browse to the following url: <http://localhost:9090/graph?g0.range_input=1h&g0.expr=istio_my_request_count%7Bdestination!~%22istio.*%22%7D&g0.tab=1>

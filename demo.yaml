@@ -13,11 +13,6 @@ spec:
   selector:
     app: service-1
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: sa-1
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,7 +32,7 @@ spec:
         app: service-1
         version: v1
     spec:
-      serviceAccountName: sa-1
+      serviceAccountName: default
       containers:
         - name: service-1
           image: istioexample/demo:0.1
@@ -60,11 +55,6 @@ spec:
   selector:
     app: service-2
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: sa-2
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -84,7 +74,7 @@ spec:
         app: service-2
         version: v1
     spec:
-      serviceAccountName: sa-2
+      serviceAccountName: default
       containers:
         - name: service-2
           image: istioexample/demo:0.1
@@ -120,11 +110,7 @@ spec:
   http:
     - match:
         - uri:
-            prefix: /api/v1/local
-        - uri:
-            prefix: /api/v1/internal
-        - uri:
-            prefix: /api/v1/external
+            prefix: /api/v1
       route:
         - destination:
             host: service-1
@@ -146,11 +132,64 @@ metadata:
   name: default:service-discovery-client
 subjects:
   - kind: ServiceAccount
-    name: sa-1
+    name: default
   - kind: ServiceAccount
-    name: sa-2
+    name: default
+  - kind: ServiceAccount
+    name: default
+    namespace: n2
 roleRef:
   kind: ClusterRole
   name: service-discovery-client
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: n2
+  labels:
+    istio-injection: enabled
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-3
+  namespace: n2
+  labels:
+    app: service-3
+    service: service-3
+spec:
+  ports:
+    - port: 8080
+      name: http
+  selector:
+    app: service-3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-3-v1
+  namespace: n2
+  labels:
+    app: service-3
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-3
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: service-3
+        version: v1
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: service-3
+          image: istioexample/demo:0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
 ---

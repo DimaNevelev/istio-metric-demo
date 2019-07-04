@@ -15,7 +15,7 @@ spec:
       source_workload_namespace: source.workload.namespace | "unknown"
       destination_host: destination.service.host | "unknown"
       destination: destination.workload.name | "unknown"
-      message: '"tenant-"+(request.headers["tenant"] | "unknown")'
+      message: '"tenant:"+(request.headers["tenant"] | "unknown")+" url_path:"+(request.url_path | "unknown")+" method:"+(request.method | "unknown")+" scheme:"+(request.scheme | "unknown")+" host:"+(request.host | "unknown")'
     monitored_resource_type: '"UNSPECIFIED"'
 ---
 # Configuration for a Prometheus handler
@@ -50,3 +50,4 @@ spec:
   actions:
     - handler: myrequesthandler
       instances: [ myrequestcount ]
+
