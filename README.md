@@ -61,6 +61,7 @@ kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=pr
 Init the metrics:
 ```
 curl -s http://${GATEWAY_URL}/api/v1/local -H"tenant: 123"
+curl -XPOST -H "Content-Type: application/json" -s http://${GATEWAY_URL}/api/v1/local -H"tenant: 123" -d'{"1234":"5678"}'
 curl -s http://${GATEWAY_URL}/api/v1/internal -H"tenant: 123"
 curl -s http://${GATEWAY_URL}/api/v1/external -H"tenant: 123"
 curl -s http://${GATEWAY_URL}/api/v1/namespace -H"tenant: 123"

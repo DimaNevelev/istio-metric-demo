@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import java.io.IOException;
@@ -53,6 +54,17 @@ public class BaseController {
         ObjectNode node = getResponseBody(okHttpClient, request);
         node.put("internal", 1);
         return node;
+    }
+
+    @PostMapping("local")
+    public ObjectNode postLocal(@RequestBody String body) {
+        if (body == null) {
+            body = "";
+        }
+        log.info("Received local post of {} bytes", body.getBytes().length);
+        ObjectNode obj = new ObjectMapper().createObjectNode();
+        obj.put("local", 1);
+        return obj;
     }
 
     @GetMapping("instance/{instanceName}")
